@@ -1,0 +1,163 @@
+\chapter{Counting from Scratch}\label{ch:counting}
+
+Everything in probability rests on one act: deciding what ``all the ways this can happen'' means, and then counting them. Interviewers know this, which is why the first ten minutes of many quant interviews are pure counting --- not because the arithmetic is hard, but because sloppy counting is the fastest way to see whether someone actually \emph{thinks} in probabilities or just recites formulas. This chapter builds the counting toolkit from nothing. If some of it feels slow, good --- the speed comes later, and it comes from these reflexes being automatic.
+
+\section{Outcomes, and the multiplication rule}
+
+Start with the only object in the chapter that isn't built from anything else: an \textbf{outcome} is one complete way an experiment can go. Roll two dice: the outcome is a pair like $(3,5)$. Flip three coins: the outcome is a string like $HTH$. The \textbf{sample space} $\Omega$ is the set of all outcomes.
+
+The first real question you will ever be asked about a sample space is: how big is it? The central tool is almost embarrassingly simple, and most of this chapter is learning when it applies.
+
+\begin{notebox}[The multiplication rule]
+If a complete outcome is built in stages, and stage $i$ can go $n_i$ ways \emph{regardless of how the earlier stages went}, then
+\[
+|\Omega| = n_1 \times n_2 \times \cdots \times n_k.
+\]
+\end{notebox}
+
+Three coins: three stages, two ways each, $2^3 = 8$ outcomes. Three dice: $6^3 = 216$. Ten coin flips: $2^{10} = 1024$. A poker hand dealt as a sequence of five cards: $52 \times 51 \times 50 \times 49 \times 48$ --- note the counts shrink, because cards leave the deck as you deal. That shrinking is the signature of sampling \emph{without replacement}, and it matters enough to have its own reflex:
+
+\begin{probe}[Spot it instantly]
+From a pool of $n$ things taken $k$ at a time, \emph{without} replacement, in order: the count is
+\[
+n(n-1)(n-2)\cdots(n-k+1),
+\]
+which is $k$ falling factors. With replacement it would just be $n^k$. Mixing these two up is the single most common counting error in interviews --- state which one you mean out loud before you count.
+\end{probe}
+
+Where does addition come in? When outcomes arrive as \emph{disjoint cases} rather than stages. If the hand is either a flush or a straight (never both --- poker hands are categorized exclusively), the total is a sum. Add for cases, multiply for stages. If the cases can overlap, adding double-counts the overlap, and you get the two-set inclusion--exclusion rule:
+\[
+|A \cup B| = |A| + |B| - |A \cap B|.
+\]
+Hold on to that minus sign; it grows into the most surprising result in this chapter (Worked Problem~\ref{wk:derangements}).
+
+\section{Order in, order out: permutations and combinations}\label{sec:permcomb}
+
+Suppose the ten candidates for a trading desk are narrowed to three seats. In how many ways can the seats be filled?
+
+Stage by stage: $10$ choices, then $9$, then $8$, so $720$ ordered line-ups. But the seats don't come numbered --- sitting in them as a group is the same outcome regardless of who filed in first. Every group of three was counted $3! = 6$ times, once per ordering. The honest count is
+\[
+\frac{10 \cdot 9 \cdot 8}{3!} = \binom{10}{3} = 120.
+\]
+
+This ``divide by the number of internal orderings'' move is the whole distinction:
+
+\begin{notebox}[Permutations vs.\ combinations]
+Choosing $k$ things from $n$:
+\[
+\underbrace{\binom{n}{k} = \frac{n!}{k!\,(n-k)!}}_{\text{order does not matter}}
+\qquad
+\underbrace{\frac{n!}{(n-k)!}}_{\text{order matters}}.
+\]
+The $k!$ in the denominator is doing exactly one job: collapsing the $k!$ orderings of each chosen group into a single outcome.
+\end{notebox}
+
+\begin{probe}[``What if order doesn't matter?'']
+Any time an interviewer adds that clause mid-question, they are telling you a factor of $k!$ is about to be won or lost. The reflex is not to divide by $k!$ mechanically, but to say why: \emph{each unordered group corresponds to exactly $k!$ ordered sequences.} If some orderings coincide (repeated elements!), the correction is different --- that's when you must slow down and count groupings directly.
+\end{probe}
+
+That last warning deserves its own example, because it is a trap that catches people with intact formula recall. How many distinct orderings of the letters in \textsc{LEVEL}? Five letters would suggest $5! = 120$, but the two \textsc{E}s are interchangeable and the two \textsc{L}s are too. Each distinct word was counted $2!\times 2! = 4$ times, so the true count is $120/4 = 30$. The formula $\binom{n}{k}$ quietly assumes all $n$ objects are distinct; when they are not, count the symmetry by hand.
+
+\section{Count the complement, count the symmetry}\label{sec:complement}
+
+Some events are painful to count directly because ``the thing you want'' is a scattered union of dozens of cases, while ``the thing you don't want'' is one clean case. The complement rule fixes this:
+\[
+P(\text{at least one}) \;=\; 1 - P(\text{none}).
+\]
+
+\begin{worked}[Two dice, and why 7 is king]
+Two fair dice. What is the probability the sum is 7? The direct approach enumerates $(1,6), (2,5), (3,4), (4,3), (5,2), (6,1)$ --- six outcomes out of $36$, so $1/6$. Now look at \emph{why} those six exist: for every first-die value $a$, there is exactly one second-die value $b = 7 - a$ that completes the sum. The sum 7 is the only total whose completions never run off the edges of the dice, which is why it beats 6 (which loses $(6,0)$-type completions) and 8. \textbf{Symmetry as a counting tool:} the table of pairs is symmetric under swapping the two dice, so sums pair up, $s \leftrightarrow 14 - s$, with identical counts --- $\Pr(\text{sum} = 6) = \Pr(\text{sum} = 8) = 5/36$. Reading structure like this off the sample space is faster and more convincing in an interview than any enumeration.
+
+\textbf{Verify it in code:} a three-line simulation of $10^6$ dice pairs returns $7$ with frequency $0.1667 \pm 0.0004$ and the $6/8$ pair matching to within noise. Every claim in this book gets this treatment --- analytic first, simulation second, and the two must agree.
+\end{worked}
+
+\begin{probe}[Push it further]
+For three dice, the same edge-effect argument predicts the most likely sums. By symmetry the distribution pairs around $10.5$, and the modes are $10$ and $11$, each achievable in $27$ of the $216$ outcomes, edging out $9$ and $12$ at $25$ each. Can you say \emph{why} $10$ and $11$ beat $9$ and $12$ without enumerating? (Hint: completions running off the edges again.)
+\end{probe}
+
+\section{Stars and bars: counting distributions}
+
+The last core pattern: you have $n$ identical units to split among $k$ recipients. Candy among kids, allocations among traders, photons among states --- the objects are identical, so an allocation is described by \emph{how many} each recipient gets, not which ones.
+
+\begin{notebox}[Stars and bars]
+The number of ways to distribute $n$ identical items among $k$ distinct boxes is
+\[
+\binom{n + k - 1}{k - 1}.
+\]
+Picture the $n$ items as stars in a row; an allocation is fixed by the $k-1$ dividers (bars) that split the row into $k$ groups. Stars and bars together form a row of $n + k - 1$ symbols, and choosing where the $k-1$ bars go fixes everything.
+\end{notebox}
+
+Five candies, three kids: $\binom{7}{2} = 21$ allocations. If each kid must get at least one, hand out the mandatory candy first --- $n$ drops to $2$, so $\binom{4}{2} = 6$. (Interviewers love that shift: \emph{forced allocations are removed before counting, not after}.)
+
+One honest warning: stars and bars counts allocations of \emph{identical} items. The moment items are distinct --- named candies, different-sized orders --- you are back in assignment territory ($k^n$ if recipients can repeat, or falling factorials if not). Say ``identical or distinct?'' out loud before using it.
+
+\section{Four worked problems}
+
+Four problems, each solved two ways: by hand, then confirmed by brute enumeration or simulation in the chapter notebook. This double-check discipline is the point of the course --- an interview answer you can also \emph{verify} on the spot is a different tier of confidence.
+
+\begin{worked}[The committee]\label{wk:committee}
+A quant club has $8$ members: $5$ traders and $3$ researchers. A $4$-person committee is chosen uniformly at random. Find the probability it contains (a) any composition, (b) at least one researcher, (c) exactly two researchers.
+
+(a) Total committees: $\binom{8}{4} = 70$ --- this is the denominator for every part.
+
+(b) Direct count of ``at least one researcher'' is three cases (one, two, or three researchers). Complement is one case: a committee with \emph{no} researchers is all-trader, $\binom{5}{4} = 5$. So
+\[
+P(\text{at least one researcher}) = 1 - \frac{5}{70} = \frac{65}{70} \approx 0.929.
+\]
+
+(c) Exactly two researchers: choose which $2$ of the $3$ researchers ($\binom{3}{2} = 3$) and which $2$ of the $5$ traders ($\binom{5}{2} = 10$). Cases multiply because the choices are independent stages:
+\[
+P(\text{exactly 2 researchers}) = \frac{3 \times 10}{70} = \frac{30}{70} \approx 0.429.
+\]
+
+\textbf{Verify:} the notebook enumerates all $\binom{8}{4} = 70$ committees with \texttt{itertools.combinations} and counts each event directly --- $65$ and $30$, matching exactly. No simulation tolerance needed; with small spaces you can hold the entire sample space in memory, and you should.
+\end{worked}
+
+\begin{worked}[The birthday problem, from counting]\label{wk:birthday}
+How many people must be in a room before a shared birthday is more likely than not? (Assume $365$ equally likely days, no leap days, independent people.)
+
+Count the complement: no shared birthdays. Person $1$ can have any day. Person $2$ must avoid it ($364$ safe days of $365$), person $3$ must avoid two days, and person $k$ must avoid $k-1$ occupied days. The stage-by-stage probability of no collision among $n$ people is
+\[
+P(\text{no shared}) = \frac{365}{365} \cdot \frac{364}{365} \cdot \frac{363}{365} \cdots \frac{365 - (n-1)}{365} = \prod_{j=1}^{n-1}\left(1 - \frac{j}{365}\right).
+\]
+So $P(\text{shared}) = 1 - \prod_{j=1}^{n-1}(1 - j/365)$. Running the product: at $n = 23$ it first crosses one half,
+\[
+P(\text{shared among 23}) \approx 0.5073.
+\]
+Twenty-three --- far smaller than most people's gut says, and the gap between gut and math is exactly why interviewers ask it. The product falls faster than intuition expects because \emph{pairwise} collision chances grow quadratically: $n$ people means $\binom{n}{2}$ pairs, each a small collision chance, and $\binom{23}{2} = 253$ pairs is a lot of shots at a hit.
+
+\textbf{Verify:} the notebook simulates $100{,}000$ rooms of $23$ random birthdays: the shared-birthday frequency lands within $\pm 0.01$ of the exact $0.5073$ (a tolerance set honestly by the simulation's own $\tfrac{1}{\sqrt{N}}$ error scale --- Chapter 7 makes that calculation exact, and the test suite encodes it so no test ever passes by luck).
+\end{worked}
+
+\begin{worked}[The hat-check problem, counting version]\label{wk:derangements}
+A restaurant loses the tickets for $n = 5$ hats and returns them uniformly at random --- one hat per guest. How many returns leave \emph{nobody} with their own hat?
+
+Total returns: $5! = 120$. Counting ``nobody gets theirs'' directly is a mess of cases; instead, build up with inclusion--exclusion. Let $A_i$ be the event guest $i$ gets their own hat. We want the total minus the union $|A_1 \cup \cdots \cup A_5|$. Summing singles counts $|A_i| = 4!$ each; pairs $|A_i \cap A_j| = 3!$; and so on, alternating signs:
+\[
+D_5 = 5! \left(1 - \frac{1}{1!} + \frac{1}{2!} - \frac{1}{3!} + \frac{1}{4!} - \frac{1}{5!}\right)
+= 120 \cdot \frac{44}{120} = 44.
+\]
+Forty-four of the $120$ returns leave everyone hatless-but-happy, so $P(\text{nobody right}) = 44/120 \approx 0.367$.
+
+The alternating sum is not a trick; it is the two-set rule $|A \cup B| = |A|+|B|-|A \cap B|$ extended to five sets, with signs alternating because each overlap layer corrects the over- or under-count of the layer above. And the punchline hiding in the formula: as $n \to \infty$ the bracket tends to $e^{-1} \approx 0.368$. The chance that \emph{nobody} is right barely moves --- $D_4 = 9$ gives $9/24 = 0.375$, already close. Expectation is Chapter 3's business, where this problem returns with a one-line answer ($E[\text{correct hats}] = 1$, always) via the indicator trick; remember this counting route, because the two methods must and do agree.
+
+\textbf{Verify:} the test suite checks $D_5 = 44$ against brute-force enumeration of all $120$ permutations, plus the recursion $D_n = (n-1)(D_{n-1} + D_{n-2})$ --- two independent roads to the same number.
+\end{worked}
+
+\begin{worked}[Straight flushes, counted honestly]\label{wk:poker}
+Because interviewers love card counting and it exercises every tool at once: how many 5-card hands are straight flushes? (Ace can be low, as in A-2-3-4-5; no wildcards. Royal flushes included.)
+
+Work in stages. A straight flush is fixed by two choices: its \emph{rank sequence} and its \emph{suit}. Rank sequences: the lowest card of a straight runs from A(low) up to $10$ (for 10-J-Q-K-A), so there are $10$ sequences. Suits: $4$. Total hands: $10 \times 4 = 40$ out of $\binom{52}{5} = 2{,}598{,}960$, so
+\[
+P(\text{straight flush}) = \frac{40}{2{,}598{,}960} \approx 1.54 \times 10^{-4} \quad (\text{about } 1 \text{ in } 65{,}000).
+\]
+The structure to internalize: decompose into \emph{independent} features (sequence, suit), count each, multiply. The trap is double counting --- e.g., counting ``royal flush separately'' would count those $4$ hands twice. When your counting scheme has a name for a special case, check whether the special case is already inside the general count before adding it.
+
+\textbf{Verify:} the notebook enumerates all $2{,}598{,}960$ hands once with \texttt{itertools} (a few seconds of compute) and the straight-flush count is exactly $40$ --- along with every other poker hand class, which becomes the test suite's reference table.
+\end{worked}
+
+\section{Where this is going}
+
+You now have every counting pattern the rest of the course stands on: multiply across independent stages, add across disjoint cases, divide out internal order, flip to the complement when ``at least one'' hurts, exploit symmetry before enumerating, and stars-and-bars when items are identical. Chapter 2 turns counts into probabilities conditioned on partial information --- the single biggest jump in interview difficulty --- and Chapter 3 retools everything here into the expectation workhorse that half of all quant interview questions run on.
+
+\paragraph{Drills for this chapter.} (1) Three dice: enumerate the counts for sums $9$--$12$ and confirm the $27/25$ claim of Section~\ref{sec:complement}. (2) How many ways to deal $4$ cards each to $3$ players from a $52$-card deck? ($52!/(40!\,(4!)^3)$ if the players are named --- say which assumption you used.) (3) Redo Worked Problem~\ref{wk:committee} for ``at least two researchers'' ($35/70$ --- complement again). (4) Distinct rearrangements of \textsc{BANANA}? ($60 = 6!/(3!\,2!\,1!)$.) Check every answer against the chapter notebook before moving on; that habit --- \emph{never trust an unverified count} --- is the course in one sentence.
